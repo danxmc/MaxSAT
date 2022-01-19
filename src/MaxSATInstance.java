@@ -170,6 +170,14 @@ public class MaxSATInstance {
         return this.performanceGuarantee;
     }
 
+    public String getCNFAnswer() {
+        List<Integer> solutionLiterals = MaxSATUtils.getSolvedAssignedLiterals(this.solution);
+        String solutionLiteralsString = solutionLiterals.stream()
+                .map(n -> String.valueOf(n))
+                .collect(Collectors.joining(" ", "", ""));
+        return "cnf " + this.solutionCost + " " + solutionLiteralsString + " 0";
+    }
+
     @Override
     public String toString() {
         return this.n + " " + this.c + " " + this.F + " " + this.time + " " + this.relativeError + " "

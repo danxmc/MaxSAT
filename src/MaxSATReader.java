@@ -92,7 +92,7 @@ public class MaxSATReader {
             try {
                 while ((currentLine = br.readLine()) != null) {
                     // Parse to separated by space array
-                    String[] strArgs = currentLine.split(" ");
+                    String[] strArgs = currentLine.trim().split("\\s+");
                     switch (strArgs[0]) {
                         case "w":
                             // Assign weights array
@@ -112,8 +112,14 @@ public class MaxSATReader {
                         case "c":
                             // Instance comment
                             break;
-                        default:
-                            // Instance number
+                        case "%":
+                            break;
+                        case "0":
+                            break;
+                        case "":
+                            break;
+                        case default:
+                            // Instance clause
                             List<Integer> clause = new ArrayList<>();
                             for (int i = 0; i < strArgs.length; i++) {
                                 int currVar = Integer.parseInt(strArgs[i]);
@@ -129,8 +135,11 @@ public class MaxSATReader {
 
                 }
                 MaxSATInstance maxSAT = new MaxSATInstance(n, c);
-                maxSAT.setWeights(W);
                 maxSAT.setF(clausesList);
+                if (W.size() == 0) {
+                    W = MaxSATUtils.generateRandomWeights(n);
+                }
+                maxSAT.setWeights(W);
                 br.close();
                 return maxSAT;
             } catch (IOException e) {

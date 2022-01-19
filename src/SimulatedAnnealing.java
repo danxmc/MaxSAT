@@ -1,11 +1,8 @@
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.Collectors;
 
 public class SimulatedAnnealing {
     public Timer timer;
@@ -15,6 +12,10 @@ public class SimulatedAnnealing {
     private static final double INITIAL_TEMPERATURE = 10000;
     private static final double FINAL_TEMPERATURE = 0.00001;
     private List<Integer> bestFoundSol = new ArrayList<>();
+
+    private static int MAX_TRIES = 3;
+    private static final double MAX_TEMP = 0.3;
+    private static final double MIN_TEMP = 0.01;
 
     // Deserialized instances from file
     public MaxSATInstance maxSATInstance;
@@ -33,61 +34,71 @@ public class SimulatedAnnealing {
 
     public void getSolution() {
         bestFoundSol = new ArrayList<Integer>(Collections.nCopies(maxSATInstance.getN(), 0));
-        // bestFoundSol.add(1);
-        // bestFoundSol.add(0);
-        // bestFoundSol.add(0);
-        // bestFoundSol.add(1);
+
+        // System.out.println(maxSATInstance.toString());
 
         timer.start();
         // System.out.println(bestFoundSol +" "+ maxSATInstance);
-        List<Integer> solution = solve(maxSATInstance.getN(), maxSATInstance.getF(), maxSATInstance.getWeights());
+        List<Integer> solution = solve2(maxSATInstance.getN(), maxSATInstance.getF(), maxSATInstance.getWeights());
         timer.end();
+        maxSATInstance.setTime(timer.totalTime);
+        maxSATInstance.setSolution(solution);
+
         System.out.println("finalAns " + solution);
+        System.out.println(maxSATInstance.getCNFAnswer());
+        // System.out.println(maxSATInstance.computationInfoToString());
     }
 
-    private List<Integer> solve(int n, List<List<Integer>> clauses, List<Integer> weights) {
+    private List<Integer> solve2(int n, List<List<Integer>> clauses, List<Integer> weights) {
+        int i = 0;
+        int tries = 0;
 
-        double t = INITIAL_TEMPERATURE;
-        List<Integer> state = MaxSATUtils.generateRandomValidSolution(n, clauses);
+        temperatureLoop: while (true) {
+            i++;
+            int j = 0;
+            List<Integer> T = MaxSATUtils.generateDPLLSolution(clauses);
+            bestFoundSol = T;
 
-        int maxIter = MAX_ITER * n;
-        while (t > FINAL_TEMPERATURE) {
-            int innerIter = 0;
-            while (innerIter <= maxIter) {
-                innerIter++;
-                List<Integer> newState = randomNeighbor(state);
+            triesLoop: while (true) {
+                double temperature = cool(i, j, n);
 
-                if (MaxSATUtils.checkSAT(clauses, newState)) {
-                    System.out.println("accepted " + newState);
-                    int neighborCost = MaxSATUtils.getSolutionTotalCost(weights, newState);
-                    int stateCost = MaxSATUtils.getSolutionTotalCost(weights, state);
+                if (temperature < MIN_TEMP) {
+                    break triesLoop;
+                }
+
+                for (int k = 0; k < n; k++) {
+                    List<Integer> newT = randomNeighbor(T, k);
+
+                    int neighborCost = MaxSATUtils.getSolutionTotalCost(weights, newT);
+                    int stateCost = MaxSATUtils.getSolutionTotalCost(weights, T);
                     int deltaC = neighborCost - stateCost;
 
                     // Accept solution if better
                     if (deltaC > 0) {
-                        state = newState;
-                    } else if (accept(deltaC, t)) { // Accept probabilistically even if solution is worse
-                        state = newState;
+                        T = newT;
+                        System.out.println("Better " + newT + " T " + stateCost + " newT " + neighborCost);
+                    } else if (accept(deltaC, temperature)) { // Accept probabilistically even if solution is worse
+                        T = newT;
+                        System.out.println("Probs " + newT + " T " + stateCost + " newT " + neighborCost);
                     }
 
                     int bestFoundCost = MaxSATUtils.getSolutionTotalCost(weights, bestFoundSol);
-                    if (stateCost > bestFoundCost) {
-                        bestFoundSol = new ArrayList<>(state);
+                    if (stateCost > bestFoundCost && MaxSATUtils.checkSAT(clauses, T)) {
+                        bestFoundSol = new ArrayList<>(T);
                     }
                 }
-
+                j++;
+                tries++;
+                if (tries == MAX_TRIES) {
+                    break temperatureLoop;
+                }
             }
-
-            t = cool(t);
         }
         return bestFoundSol;
     }
 
-    private List<Integer> randomNeighbor(List<Integer> state) {
-        int n = state.size();
+    private List<Integer> randomNeighbor(List<Integer> state, int i) {
         List<Integer> result = new ArrayList<>(state);
-        // Get random num between 0 to n - 1
-        int i = ThreadLocalRandom.current().nextInt(0, n);
 
         if (result.get(i) == 0) {
             result.set(i, 1);
@@ -98,17 +109,12 @@ public class SimulatedAnnealing {
         return result;
     }
 
-    private double cool(double t) {
-        // Geometric cooling
-        return t *= ALPHA;
+    private double cool(int i, int j, int n) {
+        return MAX_TEMP * Math.pow(Math.E, (-1 * j) / (1.0 / (i * n)));
     }
 
-    // When deltaC increases, e^(-deltaC/t) decreases
-    // the higher the cost difference, the lower the acceptance probability
-    // When t decreases, e^(-deltaC/t) decreases
-    // the lower the temperature, the lower the acceptance probability
     private boolean accept(int deltaC, double t) {
-        double acceptP = Math.pow(Math.E, 1 * deltaC / t);
+        double acceptP = 1 / (1 + Math.pow(Math.E, -1 * (deltaC / t)));
         double p = Math.random();
         return p < acceptP;
     }

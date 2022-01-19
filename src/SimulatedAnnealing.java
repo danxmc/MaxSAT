@@ -1,18 +1,11 @@
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 
 public class SimulatedAnnealing {
     public Timer timer;
     public MaxSATReader maxSATReader;
-    private static double ALPHA = 0.95;
-    private static int MAX_ITER = 3;
-    private static final double INITIAL_TEMPERATURE = 10000;
-    private static final double FINAL_TEMPERATURE = 0.00001;
     private List<Integer> bestFoundSol = new ArrayList<>();
-
     private static int MAX_TRIES = 3;
     private static final double MAX_TEMP = 0.3;
     private static final double MIN_TEMP = 0.01;
@@ -26,7 +19,7 @@ public class SimulatedAnnealing {
 
         maxSATReader = new MaxSATReader(fileUri);
         maxSATInstance = maxSATReader.deserializeMaxSATInstance();
-        System.out.println(maxSATInstance.print());
+        // System.out.println(maxSATInstance.print());
         // kReader.deserializeKnapsackOptimizationInstances(knapsackOptimizationInstances);
         // maxSATReader.setFileUri(MaxSATUtils.getSolUri(fileUri));
         // maxSATReader.deserializeKnapsackOptimumSolutionInstance(knapsackOptimumSolutionInstances);
@@ -44,9 +37,9 @@ public class SimulatedAnnealing {
         maxSATInstance.setTime(timer.totalTime);
         maxSATInstance.setSolution(solution);
 
-        System.out.println("finalAns " + solution);
+        // System.out.println("finalAns " + solution);
         System.out.println(maxSATInstance.getCNFAnswer());
-        // System.out.println(maxSATInstance.computationInfoToString());
+        System.out.println(maxSATInstance.computationInfoToString());
     }
 
     private List<Integer> solve2(int n, List<List<Integer>> clauses, List<Integer> weights) {
@@ -76,10 +69,10 @@ public class SimulatedAnnealing {
                     // Accept solution if better
                     if (deltaC > 0) {
                         T = newT;
-                        System.out.println("Better " + newT + " T " + stateCost + " newT " + neighborCost);
+                        // System.out.println("Better " + newT + " T " + stateCost + " newT " + neighborCost);
                     } else if (accept(deltaC, temperature)) { // Accept probabilistically even if solution is worse
                         T = newT;
-                        System.out.println("Probs " + newT + " T " + stateCost + " newT " + neighborCost);
+                        // System.out.println("Probs " + newT + " T " + stateCost + " newT " + neighborCost);
                     }
 
                     int bestFoundCost = MaxSATUtils.getSolutionTotalCost(weights, bestFoundSol);

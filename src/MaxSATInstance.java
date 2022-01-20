@@ -113,7 +113,7 @@ public class MaxSATInstance {
 
     public void setSolution(List<Integer> solution) {
         this.solution = solution;
-        // this.calculateSolutionCost();
+        this.calculateSolutionCost();
     }
 
     public String computationInfoToString() {
@@ -132,11 +132,10 @@ public class MaxSATInstance {
     }
 
     // function to calculate the cost of a knapsack solution
-    // public int calculateSolutionCost() {
-    // this.solutionCost = MaxSATUtils.getSolutionWeight(this.n, this.clausesList,
-    // this.solution);
-    // return this.solutionCost;
-    // }
+    public int calculateSolutionCost() {
+        this.solutionCost = MaxSATUtils.getSolutionTotalCost(this.weights, this.solution);
+        return this.solutionCost;
+    }
 
     public double calcRelativeErrorMaximization(int optC, int aprC) {
         if (optC > 0) {
